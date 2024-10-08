@@ -5,7 +5,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Generic, Callable, Iterable, Awaitable, AsyncIterator, cast
 from typing_extensions import Self, Iterator, assert_never
 
-from jiter import from_json
+from partial_json_parser import parse_json  # type: ignore
 
 from ._types import ParsedChoiceSnapshot, ParsedChatCompletionSnapshot, ParsedChatCompletionMessageSnapshot
 from ._events import (
@@ -406,10 +406,7 @@ class ChatCompletionStreamState(Generic[ResponseFormatT]):
                 and not choice_snapshot.message.refusal
                 and is_given(self._rich_response_format)
             ):
-                choice_snapshot.message.parsed = from_json(
-                    bytes(choice_snapshot.message.content, "utf-8"),
-                    partial_mode=True,
-                )
+                choice_snapshot.message.parsed = parse_json(choice_snapshot.message.content)
 
             for tool_call_chunk in choice.delta.tool_calls or []:
                 tool_call_snapshot = (choice_snapshot.message.tool_calls or [])[tool_call_chunk.index]
@@ -424,10 +421,7 @@ class ChatCompletionStreamState(Generic[ResponseFormatT]):
                         and input_tool.get("function", {}).get("strict")
                         and tool_call_snapshot.function.arguments
                     ):
-                        tool_call_snapshot.function.parsed_arguments = from_json(
-                            bytes(tool_call_snapshot.function.arguments, "utf-8"),
-                            partial_mode=True,
-                        )
+                        tool_call_snapshot.function.parsed_arguments = parse_json(tool_call_snapshot.function.arguments)
                 elif TYPE_CHECKING:  # type: ignore[unreachable]
                     assert_never(tool_call_snapshot)
 
